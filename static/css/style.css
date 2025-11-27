@@ -1,0 +1,216 @@
+:root {
+    --color-libre: #28a745;
+    --color-manana: #ffc107;
+    --color-tarde: #17a2b8;
+    --color-noche: #6c757d;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow-x: hidden;
+}
+
+.vh-100 {
+    position: sticky;
+    top: 0;
+}
+
+/* Estilos para la tabla de horarios */
+.turno-libre {
+    background-color: var(--color-libre) !important;
+    color: white;
+    font-weight: bold;
+}
+
+.turno-manana {
+    background-color: var(--color-manana) !important;
+    color: #333;
+    font-weight: bold;
+}
+
+.turno-tarde {
+    background-color: var(--color-tarde) !important;
+    color: white;
+    font-weight: bold;
+}
+
+.turno-noche {
+    background-color: var(--color-noche) !important;
+    color: white;
+    font-weight: bold;
+}
+
+#tablaHorario {
+    font-size: 0.85rem;
+}
+
+#tablaHorario td {
+    padding: 0.5rem;
+    text-align: center;
+}
+
+.progress {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.card {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.form-range::-webkit-slider-thumb {
+    background: #28a745;
+}
+
+.form-range::-moz-range-thumb {
+    background: #28a745;
+}
+
+/* Animación para métricas */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    animation: fadeInUp 0.5s ease;
+}
+
+/* Estilos para indicador de calidad */
+#alertaCalidad {
+    animation: fadeInUp 0.6s ease;
+    border-left: 5px solid;
+}
+
+.alert-success {
+    border-left-color: #28a745 !important;
+}
+
+.alert-warning {
+    border-left-color: #ffc107 !important;
+}
+
+.alert-danger {
+    border-left-color: #dc3545 !important;
+}
+
+/* Estilos para área de violaciones */
+#areaViolaciones ul {
+    padding-left: 1.2rem;
+}
+
+#areaViolaciones .small {
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+/* Mejoras para preferencias */
+#listaPreferencias {
+    scrollbar-width: thin;
+    scrollbar-color: #28a745 #343a40;
+}
+
+#listaPreferencias::-webkit-scrollbar {
+    width: 8px;
+}
+
+#listaPreferencias::-webkit-scrollbar-track {
+    background: #343a40;
+    border-radius: 4px;
+}
+
+#listaPreferencias::-webkit-scrollbar-thumb {
+    background: #28a745;
+    border-radius: 4px;
+}
+
+#listaPreferencias::-webkit-scrollbar-thumb:hover {
+    background: #218838;
+}
+
+#listaPreferencias .alert {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#listaPreferencias .btn-close {
+    padding: 0.25rem;
+    font-size: 0.7rem;
+}
+
+/* Estilos para botones de días de semana */
+.dia-semana-btn {
+    flex: 1 1 calc(33.333% - 0.5rem);
+    min-width: 120px;
+    transition: all 0.3s ease;
+}
+
+.dia-semana-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.dia-semana-btn.active {
+    transform: scale(1.05);
+}
+
+/* Modal mejorado */
+.modal-lg {
+    max-width: 700px;
+}
+
+.form-check-input:checked {
+    background-color: #ffc107;
+    border-color: #ffc107;
+}
+
+/* Vista previa de días */
+#previaDiasSeleccionados {
+    animation: fadeInUp 0.3s ease;
+    border-left: 4px solid #17a2b8;
+}
+
+/* Mejora para alertas de especialistas */
+.alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffc107;
+}
+
+.alert-warning .bi-star-fill {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+/* Filas de especialistas en la tabla */
+#tablaHorario .table-warning {
+    background-color: rgba(255, 193, 7, 0.15) !important;
+}
+
+#tablaHorario .table-warning td:first-child {
+    background-color: rgba(255, 193, 7, 0.25) !important;
+    border-left: 3px solid #ffc107;
+}
+
+/* Leyenda de especialistas */
+#leyendaEspecialistas {
+    display: inline-block;
+    margin-top: 0.25rem;
+}
+
+#leyendaEspecialistas .bi-star-fill {
+    font-size: 0.85rem;
+}

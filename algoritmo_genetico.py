@@ -51,7 +51,7 @@ class Horario:
 # FUNCIÓN DE APTITUD (FITNESS)
 # ============================================
 
-def calcular_aptitud(horario: Horario) -> float:
+def calcular_aptitud(horario: Horario, guardar_detalles: bool = False) -> float:
     """
     Evalúa qué tan bueno es un horario.
     Menor penalización = mejor aptitud.
@@ -59,33 +59,62 @@ def calcular_aptitud(horario: Horario) -> float:
     penalizacion_dura = 0
     penalizacion_blanda = 0
     
+    # Diccionarios para guardar detalles de violaciones
+    violaciones_duras = {}
+    violaciones_blandas = {}
+    
     # --- RESTRICCIONES DURAS ---
     
     # 1. No trabajar Noche seguido de Mañana
-    penalizacion_dura += verificar_noche_manana(horario.genes)
+    pen, detalle = verificar_noche_manana(horario.genes, guardar_detalles)
+    penalizacion_dura += pen
+    if guardar_detalles and detalle:
+        violaciones_duras['noche_manana'] = detalle
     
     # 2. No más de 6 días consecutivos trabajando
-    penalizacion_dura += verificar_dias_consecutivos(horario.genes)
+    pen, detalle = verificar_dias_consecutivos(horario.genes, guardar_detalles)
+    penalizacion_dura += pen
+    if guardar_detalles and detalle:
+        violaciones_duras['dias_consecutivos'] = detalle
     
     # 3. Mínimo 1 especialista por turno (excepto Libre)
-    penalizacion_dura += verificar_especialistas_por_turno(horario.genes)
+    pen, detalle = verificar_especialistas_por_turno(horario.genes, guardar_detalles)
+    penalizacion_dura += pen
+    if guardar_detalles and detalle:
+        violaciones_duras['especialistas'] = detalle
     
     # 4. Cobertura mínima por turno
-    penalizacion_dura += verificar_cobertura_minima(horario.genes)
+    pen, detalle = verificar_cobertura_minima(horario.genes, guardar_detalles)
+    penalizacion_dura += pen
+    if guardar_detalles and detalle:
+        violaciones_duras['cobertura'] = detalle
     
     # --- RESTRICCIONES BLANDAS ---
     
     # 1. Preferencias personales
-    penalizacion_blanda += verificar_preferencias(horario.genes)
+    pen, detalle = verificar_preferencias(horario.genes, guardar_detalles)
+    penalizacion_blanda += pen
+    if guardar_detalles and detalle:
+        violaciones_blandas['preferencias'] = detalle
     
     # 2. Equidad en la carga de trabajo
-    penalizacion_blanda += verificar_equidad_turnos(horario.genes)
+    pen, detalle = verificar_equidad_turnos(horario.genes, guardar_detalles)
+    penalizacion_blanda += pen
+    if guardar_detalles and detalle:
+        violaciones_blandas['equidad'] = detalle
     
     # 3. Distribución equilibrada de turnos nocturnos
-    penalizacion_blanda += verificar_distribucion_noches(horario.genes)
+    pen, detalle = verificar_distribucion_noches(horario.genes, guardar_detalles)
+    penalizacion_blanda += pen
+    if guardar_detalles and detalle:
+        violaciones_blandas['noches'] = detalle
     
     horario.penalizacion_dura = penalizacion_dura
     horario.penalizacion_blanda = penalizacion_blanda
+    
+    if guardar_detalles:
+        horario.violaciones_duras = violaciones_duras
+        horario.violaciones_blandas = violaciones_blandas
     
     # Aptitud = maximizar (menor penalización es mejor)
     # Penalizaciones duras pesan 100x más
@@ -98,34 +127,44 @@ def calcular_aptitud(horario: Horario) -> float:
 # FUNCIONES DE VERIFICACIÓN DE RESTRICCIONES
 # ============================================
 
-def verificar_noche_manana(genes: np.ndarray) -> int:
+def verificar_noche_manana(genes: np.ndarray, guardar_detalles: bool = False):
     """Penaliza si una enfermera trabaja Noche y al día siguiente Mañana."""
     penalizacion = 0
+    violaciones = []
     for enfermera in range(NUM_ENFERMERAS):
         for dia in range(NUM_DIAS - 1):
             if genes[enfermera, dia] == 3 and genes[enfermera, dia + 1] == 1:
                 penalizacion += 50  # Penalización alta
-    return penalizacion
+                if guardar_detalles:
+                    violaciones.append(f"Enfermera {enfermera+1}: Noche día {dia+1}, Mañana día {dia+2}")
+    return penalizacion, violaciones if guardar_detalles else None
 
 
-def verificar_dias_consecutivos(genes: np.ndarray) -> int:
+def verificar_dias_consecutivos(genes: np.ndarray, guardar_detalles: bool = False):
     """Penaliza si trabaja más de 6 días seguidos."""
     penalizacion = 0
+    violaciones = []
     for enfermera in range(NUM_ENFERMERAS):
         dias_trabajados = 0
+        max_consecutivos = 0
         for dia in range(NUM_DIAS):
             if genes[enfermera, dia] != 0:  # No es día libre
                 dias_trabajados += 1
+                max_consecutivos = max(max_consecutivos, dias_trabajados)
                 if dias_trabajados > 6:
                     penalizacion += 30
             else:
                 dias_trabajados = 0  # Reset al encontrar día libre
-    return penalizacion
+        if guardar_detalles and max_consecutivos > 6:
+            violaciones.append(f"Enfermera {enfermera+1}: {max_consecutivos} días consecutivos (máx: 6)")
+    return penalizacion, violaciones if guardar_detalles else None
 
 
-def verificar_especialistas_por_turno(genes: np.ndarray) -> int:
+def verificar_especialistas_por_turno(genes: np.ndarray, guardar_detalles: bool = False):
     """Verifica que haya al menos 1 especialista en cada turno (Mañana, Tarde, Noche)."""
     penalizacion = 0
+    violaciones = []
+    turnos_nombres = {1: 'Mañana', 2: 'Tarde', 3: 'Noche'}
     for dia in range(NUM_DIAS):
         for turno in [1, 2, 3]:  # Mañana, Tarde, Noche
             especialistas_en_turno = 0
@@ -135,33 +174,43 @@ def verificar_especialistas_por_turno(genes: np.ndarray) -> int:
             
             if especialistas_en_turno == 0:
                 penalizacion += 40  # Muy importante
-    return penalizacion
+                if guardar_detalles:
+                    violaciones.append(f"Día {dia+1}, turno {turnos_nombres[turno]}: sin especialistas")
+    return penalizacion, violaciones if guardar_detalles else None
 
 
-def verificar_cobertura_minima(genes: np.ndarray) -> int:
+def verificar_cobertura_minima(genes: np.ndarray, guardar_detalles: bool = False):
     """Asegura que cada turno tenga al menos 2 personas (excepto Libre)."""
     penalizacion = 0
     cobertura_minima = 2
+    violaciones = []
+    turnos_nombres = {1: 'Mañana', 2: 'Tarde', 3: 'Noche'}
     
     for dia in range(NUM_DIAS):
         for turno in [1, 2, 3]:
             personal_en_turno = np.sum(genes[:, dia] == turno)
             if personal_en_turno < cobertura_minima:
-                penalizacion += (cobertura_minima - personal_en_turno) * 20
-    return penalizacion
+                faltante = cobertura_minima - personal_en_turno
+                penalizacion += faltante * 20
+                if guardar_detalles:
+                    violaciones.append(f"Día {dia+1}, turno {turnos_nombres[turno]}: {personal_en_turno} personas (mín: 2)")
+    return penalizacion, violaciones if guardar_detalles else None
 
 
-def verificar_preferencias(genes: np.ndarray) -> int:
+def verificar_preferencias(genes: np.ndarray, guardar_detalles: bool = False):
     """Penaliza ligeramente si no se respetan preferencias personales."""
     penalizacion = 0
+    violaciones = []
     for enfermera, dias_preferidos in PREFERENCIAS.items():
         for dia in dias_preferidos:
             if genes[enfermera, dia] != 0:  # No está libre
                 penalizacion += 5
-    return penalizacion
+                if guardar_detalles:
+                    violaciones.append(f"Enfermera {enfermera+1}: prefería libre el día {dia+1}")
+    return penalizacion, violaciones if guardar_detalles else None
 
 
-def verificar_equidad_turnos(genes: np.ndarray) -> int:
+def verificar_equidad_turnos(genes: np.ndarray, guardar_detalles: bool = False):
     """Penaliza si hay desequilibrio en días trabajados entre enfermeras."""
     dias_trabajados = []
     for enfermera in range(NUM_ENFERMERAS):
@@ -169,12 +218,20 @@ def verificar_equidad_turnos(genes: np.ndarray) -> int:
         dias_trabajados.append(dias)
     
     desviacion_estandar = np.std(dias_trabajados)
-    return int(desviacion_estandar * 3)  # Penalización proporcional
+    penalizacion = int(desviacion_estandar * 3)
+    
+    detalle = None
+    if guardar_detalles:
+        min_dias = min(dias_trabajados)
+        max_dias = max(dias_trabajados)
+        promedio = np.mean(dias_trabajados)
+        detalle = [f"Desviación: {desviacion_estandar:.1f} días (min: {min_dias}, max: {max_dias}, promedio: {promedio:.1f})"]
+    
+    return penalizacion, detalle
 
 
-def verificar_distribucion_noches(genes: np.ndarray) -> int:
+def verificar_distribucion_noches(genes: np.ndarray, guardar_detalles: bool = False):
     """Verifica que los turnos nocturnos estén bien distribuidos."""
-    penalizacion = 0
     noches_por_enfermera = []
     
     for enfermera in range(NUM_ENFERMERAS):
@@ -182,7 +239,16 @@ def verificar_distribucion_noches(genes: np.ndarray) -> int:
         noches_por_enfermera.append(noches)
     
     desviacion = np.std(noches_por_enfermera)
-    return int(desviacion * 5)
+    penalizacion = int(desviacion * 5)
+    
+    detalle = None
+    if guardar_detalles:
+        min_noches = min(noches_por_enfermera)
+        max_noches = max(noches_por_enfermera)
+        promedio = np.mean(noches_por_enfermera)
+        detalle = [f"Desviación: {desviacion:.1f} noches (min: {min_noches}, max: {max_noches}, promedio: {promedio:.1f})"]
+    
+    return penalizacion, detalle
 
 
 # ============================================
